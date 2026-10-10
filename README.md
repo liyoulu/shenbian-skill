@@ -4,6 +4,14 @@
 
 ## 一行安装
 
+**推荐：Vercel skills CLI（多 agent 通吃，自动发现你装了哪些 agent）**：
+
+```bash
+npx skills add liyoulu/shenbian-skill
+```
+
+装完后对 agent 说「深变」或「DFL-PyTorch」即可触发。（Claude Code / Codex / OpenClaw / Copilot 等 79 种 agent 自动识别；加 `-g` 装到用户级，默认项目级。）
+
 **AutoClaw（Windows PowerShell）**：
 
 ```powershell
