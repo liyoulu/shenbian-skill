@@ -49,6 +49,31 @@ description: 深变（DeepFaceLab-PyTorch / DeepFaceLab-Torch）工作流 skill�
 | 端到端流程细节与老 DFL 差异 | [merge-workflow.md](references/merge-workflow.md) |
 | 遇到报错/异常 | 本文件「排障速查」 |
 
+## 训练调参速查（起训默认 + 信号表 + 阶段律）
+
+**起训默认模板**（多数场景直接用）：use_bf16 + lr_plateau_factor=0.3（平台期自动降 lr，无需预知总步数）+ crash_threshold=4.0（默认勿动）+ masked_training + eyes_mouth_prio + uniform_yaw + random_dst_flip=y（random_src_flip 默认关：特定人的脸部不对称翻转后是假样本，模型会学成对称脸=不像）+ gradient_checkpointing（显存紧张时）。ct_mode 默认 rct；lr_cos 保持 0（余弦热重启后期把刚压实的细节重新抖松，上游作者实测建议关）。
+
+**信号 → 动作**（一次只改一项，改后看 30 分钟 loss 反应）：
+
+| 参数 | 开的信号 | 关/保持 0 的信号 |
+|---|---|---|
+| random_noise | dst 有夜戏/高 ISO/老片噪点 | 素材干净 |
+| random_occlusion | 素材常被手/发/话筒遮挡 | 遮挡少（边际收益小还拖速度） |
+| random_color_power | 打光乱（舞台/霓虹/日夜混剪） | 打光统一 |
+| edge_enhance_power | 合成预览边缘硬边/色差圈（5 起步） | 边缘干净 |
+| face_style/bg_style | src 身份挂不住（0.05-0.1 起） | 默认 0（训慢易过拟合） |
+| gan / vgg | 最后 10-20% 冲细节，二选一 | 早期开=训练不稳 |
+
+**增强分阶段律**：前期（快降段）random_warp + 按信号增强全开；后期（压细节段）**random_warp 必关**（前期学形变鲁棒，后期抖动压制细节压实）；若成片目标本身是脏画面（夜戏），noise 保留到最后（训练分布=推理分布）；收官前可 gan/vgg 冲刺。架构参数（分辨率/ae_dims/batch）不可热改，只在两轮训练之间换。
+
+**合成调色决策线（MergeStudio color_transfer_mode）**：
+```
+rct（默认）→ 脸缘有淡淡色差圈？→ mt（遮罩软加权统计）
+mt 后整体还差口气 / 偏色分区域、非均匀？→ lut（17³ 3D LUT，非线性有界，每帧拟合较慢）
+lut 救不回来 → 大概率不是调色问题，回去查 mask_mode / 取景
+```
+一次只改一个 ct_mode 看预览；lut 批量导出前先测速。
+
 ## 常见任务 SOP
 
 **SOP-1 新视频全流程**
@@ -98,4 +123,4 @@ ffprobe 看规格 → 切脸（--quick-test 先验参数）→ 清洗 → 训练
 
 ## 更新记录
 
-见 [meta.md](references/meta.md)。
+见 [meta.md](references/meta.md)。调参速查见上方「训练调参速查」节。
