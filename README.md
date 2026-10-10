@@ -37,6 +37,7 @@ git clone --depth 1 https://github.com/liyoulu/shenbian-skill.git "$HOME/.agents
 | `references/landmarker-selection.md` | 15 检测器 × 8 标记器实测选型（含云/框比自检法） |
 | `references/data-processing.md` | 脸集清洗：faceid 拆身份、blur 剔糊、GUI↔CLI 对照 |
 | `references/new-params-guide.md` | 深变独有训练参数深度说明 |
+| SKILL.md「训练调参速查」 | **起训默认模板 + 信号→动作表 + 增强分阶段律 + ct_mode 决策线（rct→mt→lut）** |
 | `references/mergestudio-params.md` | **MergeStudio 合成滑块全家桶**：mode/mask/erode/ctm/超分，含固定调参顺序 |
 | `references/merge-workflow.md` | 端到端流程细节、与老 DFL 差异、HDR/AV1 实测 |
 | `tools/doctor.py` | **环境自检**：根目录/modelhub/ffmpeg/CUDA/XSeg/磁盘/fork 增强，`--json` 机器可读，agent 激活先跑 |
