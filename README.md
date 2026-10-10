@@ -39,7 +39,9 @@ git clone --depth 1 https://github.com/liyoulu/shenbian-skill.git "$HOME/.agents
 | `references/new-params-guide.md` | 深变独有训练参数深度说明 |
 | `references/mergestudio-params.md` | **MergeStudio 合成滑块全家桶**：mode/mask/erode/ctm/超分，含固定调参顺序 |
 | `references/merge-workflow.md` | 端到端流程细节、与老 DFL 差异、HDR/AV1 实测 |
-| `tools/marker_probe/` | 检测器/标记点实测装置（`DFL_ROOT` 环境变量或自动探测） |
+| `tools/doctor.py` | **环境自检**：根目录/modelhub/ffmpeg/CUDA/XSeg/磁盘/fork 增强，`--json` 机器可读，agent 激活先跑 |
+| `tools/marker_probe/` | 检测器/标记点实测装置（`DFL_ROOT` 环境变量或自动探测，均支持 `--check` 自检） |
+| `tests/` + CI | pytest 测试基线（无需装深变即可跑，fixtures 模拟仓库骨架）+ GitHub Actions |
 
 ## 前置要求
 

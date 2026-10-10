@@ -58,7 +58,8 @@ def sheet(files, cols, rows, cell, title):
 
 
 ap = argparse.ArgumentParser()
-ap.add_argument('root', help='脸集目录')
+ap.add_argument('root', nargs='?', default='', help='脸集目录')
+ap.add_argument('--check', action='store_true', help='环境自检后退出（不处理图片）')
 ap.add_argument('--out', default='', help='输出目录（默认 <root>\\_idcheck）')
 ap.add_argument('--cols', type=int, default=4)
 ap.add_argument('--rows', type=int, default=3)
@@ -68,6 +69,11 @@ ap.add_argument('--pattern', default='*.jpg', help='匹配模式，可用逗号�
 ap.add_argument('--mode', choices=['auto', 'group', 'flat'], default='auto')
 ap.add_argument('--title', default='', help='平铺模式的自定义标题')
 args = ap.parse_args()
+if getattr(args, 'check', False):
+    import _env
+    ok, lines_ = _env.selfcheck()
+    print('\n'.join(lines_))
+    sys.exit(0 if ok else 2)
 
 root = os.path.abspath(args.root)
 if not os.path.isdir(root):

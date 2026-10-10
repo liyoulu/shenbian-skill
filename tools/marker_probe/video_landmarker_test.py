@@ -19,10 +19,13 @@ import sys, os, argparse, subprocess, glob, time
 import _env
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
-import mk_common as M
-from xlib.onnxruntime import get_cpu_device_info
-from MergeStudio.core.detector.factory import DetectorFactory
-from facelib import LandmarksProcessor, FaceType
+import _env  # noqa: F401  (环境解析；--check 在 argparse 后处理)
+import argparse as _argparse
+if '--check' not in sys.argv:
+    import mk_common as M
+    from xlib.onnxruntime import get_cpu_device_info
+    from MergeStudio.core.detector.factory import DetectorFactory
+    from facelib import LandmarksProcessor, FaceType
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FFMPEG = os.path.join(_env.ROOT, 'ffmpeg', 'ffmpeg.exe')
@@ -72,7 +75,8 @@ def marker_runner(name):
 
 
 ap = argparse.ArgumentParser()
-ap.add_argument('--video', required=True)
+ap.add_argument('--video', required=False)
+ap.add_argument('--check', action='store_true', help='环境自检后退出（不处理视频）')
 ap.add_argument('--start', default='00:00:20')
 ap.add_argument('--dur', type=float, default=10.0)
 ap.add_argument('--fps', type=float, default=2.0)
@@ -82,6 +86,11 @@ ap.add_argument('--markers', default=','.join(ALL_MARKERS))
 ap.add_argument('--frames-dir', default='', help='复用已抽好的帧目录（省一次 ffmpeg）')
 ap.add_argument('--keep-frames', action='store_true')
 args = ap.parse_args()
+if getattr(args, 'check', False):
+    import _env
+    ok, lines_ = _env.selfcheck()
+    print('\n'.join(lines_))
+    sys.exit(0 if ok else 2)
 
 if args.frames_dir and os.path.isdir(args.frames_dir):
     fdir = args.frames_dir

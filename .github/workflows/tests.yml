@@ -1,0 +1,28 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: pip install pytest
+      - name: Run tests (no DFL repo needed; fixtures fake it)
+        run: python -m pytest tests/ -v
+      - name: Doctor smoke (expect FAIL exit on bare runner, but valid JSON)
+        run: |
+          $out = python tools/doctor.py --json 2>$null | Out-String
+          $j = $out | ConvertFrom-Json
+          if (-not $j.checks) { throw "doctor json invalid" }
+          "doctor on bare runner: $($j.checks.Count) checks, root=$($j.root)"
+        shell: pwsh
+        continue-on-error: true

@@ -18,9 +18,12 @@ import sys, os, argparse, subprocess, glob, time
 import _env
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
-import mk_common as M
-from xlib.onnxruntime import get_cpu_device_info
-from MergeStudio.core.detector.factory import DetectorFactory
+import _env  # noqa: F401  (环境解析；--check 在 argparse 后处理)
+import argparse as _argparse
+if '--check' not in sys.argv:
+    import mk_common as M
+    from xlib.onnxruntime import get_cpu_device_info
+    from MergeStudio.core.detector.factory import DetectorFactory
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FFMPEG = os.path.join(_env.ROOT, 'ffmpeg', 'ffmpeg.exe')
@@ -53,7 +56,8 @@ def norm_boxes(raw):
 
 
 ap = argparse.ArgumentParser()
-ap.add_argument('--video', required=True)
+ap.add_argument('--video', required=False)
+ap.add_argument('--check', action='store_true', help='环境自检后退出（不处理视频）')
 ap.add_argument('--start', default='00:00:05')
 ap.add_argument('--dur', type=float, default=8.0)
 ap.add_argument('--fps', type=float, default=2.0)
@@ -61,6 +65,11 @@ ap.add_argument('--max-width', type=int, default=1920)
 ap.add_argument('--detectors', default='TinyMog,YoloV8Face,RetinaFace_10g,S3FD')
 ap.add_argument('--keep-frames', action='store_true')
 args = ap.parse_args()
+if getattr(args, 'check', False):
+    import _env
+    ok, lines_ = _env.selfcheck()
+    print('\n'.join(lines_))
+    sys.exit(0 if ok else 2)
 if not os.path.exists(args.video):
     sys.exit('视频不存在: %s' % args.video)
 

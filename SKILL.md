@@ -1,6 +1,6 @@
 ---
 name: shenbian
-description: 深变（DeepFaceLab-PyTorch / DeepFaceLab-Torch）工作流 skill：装好深变之后，从素材准备、切脸（15 检测器/8 标记器）、数据清洗、训练（SAEHD/LIAELarge/AMP/XSeg 等）、XSeg 遮罩、MergeStudio 网页合成到导出的全流程实操手册。含实测选型数据、常见任务 SOP、参数文档与排障。适用于官方版 v4.0.9（github.com/CaijiPlayer258/DeepFaceLab-PyTorch）。说"深变"、"DFL-PyTorch"、"DFL-Torch"时用本 skill；原版 iperov DeepFaceLab（TF 版）不适用。
+description: 深变（DeepFaceLab-PyTorch / DeepFaceLab-Torch）工作流 skill：装好深变之后，从素材准备、切脸（15 检测器/8 标记器）、数据清洗、训练（SAEHD/LIAELarge/AMP/XSeg 等）、XSeg 遮罩、MergeStudio 网页合成到导出的全流程实操手册。含实测选型数据、常见任务 SOP、参数文档与排障。适用于官方版 v4.0.9（github.com/CaijiPlayer258/DeepFaceLab-PyTorch）。说"深变"、"DFL-PyTorch"、"DFL-Torch"、"MergeStudio"时用本 skill；不适用：原版 iperov DeepFaceLab（TF 版）、"老版/C 盘版/老工作流"、DeepFaceLive、faceswap/roop 等其它工具。
 ---
 
 # 深变（DeepFaceLab-PyTorch）公共版工作流 skill
@@ -8,6 +8,11 @@ description: 深变（DeepFaceLab-PyTorch / DeepFaceLab-Torch）工作流 skill�
 > 目标读者：装好深变、想尽快跑通「视频进 → 成片出」的用户，以及替用户操作深变的 AI agent。
 > 上游：https://github.com/CaijiPlayer258/DeepFaceLab-PyTorch （B 站 @菜级玩家）
 > 本 skill 基于官方 v4.0.9 实测整理（2026-09/10），README 官方文档 + 源码 + 实跑交叉验证。
+
+## ⚡ 第一动作（agent 激活本 skill 后先做这两件事）
+
+1. **解析 DFL_ROOT 并替换全文占位符**：本文件与所有 references 中命令里的 `<DFL_ROOT>` 一律先替换为真实路径再执行。解析顺序：环境变量 `DFL_ROOT` → 自动探测（`tools\marker_probe\_env.py` 的逻辑：F:/C:/D:/`~/` 下的 DFL-PyTorch 且含 main.py）。
+2. **跑环境自检**：`python <skill目录>\tools\doctor.py`（退出码 0 才继续正式工作；非 0 时按输出里的 fix 提示处理，或向用户报告）。marker_probe 工具另有单工具版 `--check`。
 
 ## 你需要先有
 
@@ -67,16 +72,9 @@ ffprobe 看规格 → 切脸（--quick-test 先验参数）→ 清洗 → 训练
 6. HDR 颜色不对 → 提取时选「HDR 精确模式」（libplacebo 管道内色调映射）
 7. 长任务请用独立进程跑（`Start-Process -PassThru` + 日志重定向），不要在交互会话里前台等待
 
-## 环境基线（v4.0.9 实测参考）
+## 环境基线与更新记录
 
-| 组件 | 版本 | 验证命令 |
-|---|---|---|
-| Python | 3.12+（作者验证 3.12/3.14） | `python --version` |
-| PyTorch | 2.9+（CUDA 12.6/12.8/13 均可，按官方安装） | `python -c "import torch;print(torch.__version__,torch.version.cuda)"` |
-| onnxruntime | 与 torch 的 CUDA 版本配对（不匹配会静默退 CPU） | `python -c "import onnxruntime as o;print(o.__version__,o.get_available_providers())"` |
-| ffmpeg | gyan.dev full 静态版（含 libplacebo，HDR 必需） | `ffmpeg -version` |
-
-> 项目自 v4.0.7 起低维护模式（README 声明）：核心功能可用，新功能不再积极开发。
+版本矩阵（Python/PyTorch/onnxruntime/ffmpeg）、验证命令、更新历史见 [meta.md](references/meta.md)。上游自 v4.0.7 起低维护模式：核心功能可用，新功能不再积极开发。
 
 ## 常见陷阱（浓缩版）
 
@@ -90,9 +88,10 @@ ffprobe 看规格 → 切脸（--quick-test 先验参数）→ 清洗 → 训练
 
 ## 实测数据与工具
 
-- `tools/marker_probe/`：检测器/标记点实测装置（video_segment_test / video_landmarker_test / make_contact_sheet + mk_common/_env 库）。运行前置：`DFL_ROOT` 环境变量指向深变根目录（或 F:/C:/D: 自动探测）
+- `tools/doctor.py`：环境自检（根目录/modelhub/ffmpeg/CUDA provider/XSeg/磁盘/fork 增强；`--quiet` `--json` 可选）——**agent 每次激活先跑它**
+- `tools/marker_probe/`：检测器/标记点实测装置（video_segment_test / video_landmarker_test / make_contact_sheet + mk_common/_env 库，均支持 `--check` 自检）。运行前置：`DFL_ROOT` 环境变量或自动探测
 - 实测结论全部在 references（选型表、阈值、性能数字），均可复跑
 
 ## 更新记录
 
-- 2026-10-10：公共版首发（基于个人版 shenbian skill 重构：剥离个人路径/实例，面向官方 v4.0.9 重写基准，新增 quickstart 与 mergestudio-params）
+见 [meta.md](references/meta.md)。
