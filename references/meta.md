@@ -17,5 +17,7 @@
 
 ## 更新记录
 
+- 2026-10-11：新增 trainctl 训练控制工具与 SOP-2b（实测于 4702 张 PNG 脸集 + RTX3060 12G 全链路：热改 lr/保存/两列预览/优雅退出）。配套两个上游修复建议（本仓库 fork 实测）：① SampleLoader 后缀过滤排除 PNG 导致训练器不认 PNG 脸集；② 16 核以上机器生成器 worker 过多可致 32GB 内存机器提交内存耗尽（WinError 1455/6），封顶 env DFL_GENERATORS_CAP=4 解决
+
 - 2026-10-10（第二版）：面向 agent 优化——新增 doctor.py 环境自检与「第一动作」约定（先解析 DFL_ROOT 替换占位符、先跑 doctor）；marker_probe 三工具加 `--check`；frontmatter 补不适用反例（iperov 原版/DeepFaceLive/faceswap 等）；环境基线与更新记录下沉本文件（token 经济）；新增 tests/ 与 GitHub Actions CI
 - 2026-10-10（首发）：基于个人版 shenbian skill 重构：剥离个人路径/实例，面向官方 v4.0.9 重写基准，新增 quickstart 与 mergestudio-params

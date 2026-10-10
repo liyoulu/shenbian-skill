@@ -55,7 +55,11 @@ description: 深变（DeepFaceLab-PyTorch / DeepFaceLab-Torch）工作流 skill�
 ffprobe 看规格 → 切脸（--quick-test 先验参数）→ 清洗 → 训练（或用现成模型）→ MergeStudio 合成导出 → 抽帧目检 + 像素 diff 审计（不要只看导出成功与否）。逐步命令见 quickstart.md。
 
 **SOP-2 换 dst 素材续训**
-确认无训练进程在跑 → data.dat 会提示重置，按提示确认（权重保留）→ 新素材切脸清洗 → `main.py train` 续训。训练中禁止 kill 进程；状态只看 GPU 利用率。
+确认无训练进程在跑 → data.dat 会提示重置，按提示确认（权重保留）→ 新素材切脸清洗 → `main.py train` 续训（加 `--webui-port 6789 --no-preview --silent-start` 可被 trainctl 控制）。训练中禁止 kill 进程；状态只看 GPU 利用率。
+
+**SOP-2b 训练中一行命令控制（trainctl）**
+训练以 `--webui-port 6789 --no-preview --silent-start` 启动后，用 `tools\trainctl.py`（需自行从本仓库复制到深变 tools/，它只依赖标准库+numpy+Pillow）远程控制：
+`status`（一屏状态）/ `options`（参数 JSON）/ `set lr=5e-05 k=v`（热改参，白名单：lr/lr_dropout/random_*_flip/random_hsv_power/eyes_mouth_prio/uniform_yaw/face_style_power/bg_style_power/masked_training 等）/ `save` / `quit`（保存+优雅退出）/ `preview --out p.jpg`（手机两列预览，迭代间隔长时需等 3-5 分钟）/ `loss --chart l.jpg`。鉴权默认 caiji。注意：`/request-preview` 是 GET。
 
 **SOP-3 老 DFL（TF）模型转来用**
 `tools\convert_dfl_tf_to_torch.py`（权重+optimizer state 无损转换）+ `tools\verify_converted_dfl_model.py`（建议 --deep 校验）。老 DFL 生态的 .dfm 也可直接给 MergeStudio 加载（标准 ONNX，实测兼容）。
