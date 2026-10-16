@@ -8,6 +8,7 @@
 
 - 路径 = aligned 目录（含 DFLJPG 人脸 + metadata.h5）
 - 深变默认：`<DFL_ROOT>\workspace\<视频名>\aligned`
+- 本项目实例（<示例片>）：`<素材库>/DST\shenbian_<片名>`（Junction，实体在 D 盘脸集库）
 - 提取时已写入 metadata.h5（landmarks/rect 等），Filter/Sorter 直接复用，不重复计算几何量
 
 ## 四种过滤模式（Filter.py）
@@ -22,11 +23,11 @@
 ## 指定人物保留流程（多人素材标准玩法）
 
 ```powershell
-Set-Location <DFL_ROOT>   # 你的深变安装目录
+Set-Location <DFL_ROOT>
 
 # 1) 身份聚类（在 aligned 目录内生成 faceid_group_XXX 子文件夹）
 .\python\python.exe FacesetProcessor\Filter.py `
-  --input "<aligned目录>" `
+  --input "<素材库>/DST\shenbian_<片名>" `
   --mode faceid --eps 0.3 --min-samples 2 --model w600k_mbf
 
 # 2) 人工目检各 group 的代表帧，确定目标人物所在文件夹
@@ -36,7 +37,7 @@ Set-Location <DFL_ROOT>   # 你的深变安装目录
 
 # 4) 合并回 aligned 根目录（DFL 扁平结构，供训练/合成读取）
 .\python\python.exe FacesetProcessor\Filter.py `
-  --input "<aligned目录>" --merge-only
+  --input "<素材库>/DST\shenbian_<片名>" --merge-only
 ```
 
 - --merge-only：只把子文件夹合回根目录，不做聚类（用于挑选后归位）
@@ -47,7 +48,7 @@ Set-Location <DFL_ROOT>   # 你的深变安装目录
 
 ```powershell
 .\python\python.exe FacesetProcessor\Filter.py `
-  --input "<aligned目录>" `
+  --input "<素材库>/DST\shenbian_<片名>" `
   --mode blur --train-res 416
 ```
 
@@ -67,21 +68,26 @@ Set-Location <DFL_ROOT>   # 你的深变安装目录
 
 ## 脸集实体存放规则（2026-09-30 用户指定，两段式生命周期）
 
+1. **切脸产物（活跃工作流）→ 默认放 C 盘 SSD**：<老DFL-MVE安装根>\workspace_ssd\dst\<片名>\，workspace 里 Junction 指过去。提取/筛选/质检/训练全在 SSD 上跑（HDD 上大规模文件操作太慢：rename 元数据地板 16-300 文件/秒 + 读取慢）
+2. **沉淀（筛选定稿）→ 移到 D 盘脸集库**：<素材库>/DST\<片名>\（长期归档）。由用户手动移动，或让 agent 执行（跨盘移动 = 真实复制，SSD 目标速度快）
 
-## 实例记录（2026-09-30 实测）
+- Junction 建法：New-Item -ItemType Junction -Path "<workspace>\<视频名>\aligned" -Target "<SSD实体目录>"
+- <示例片> 本片：产物已落在 D 盘（历史习惯），保持现状不迁移
+
+## 实例记录（<示例片>，2026-09-30）
 
 - 输入：135,714 张（含第二人 + 零星误检），预计 2-4 个身份组
 - 聚类参数：eps 0.3 / min-samples 2 / w600k_mbf
 - 后续：挑定楓ふうあ组 → 其余移出 → merge-only → blur --train-res 416 → 目检 → 训练/合成
 
-## 身份筛选的标准做法（2026-09-30 实测）
+## 身份筛选的标准做法（2026-09-30 实测补充，<示例片> 实例）
 
 深变内置的可视化**不提供"按身份分组的并排拼图"**（内置只有：GUI 数据处理页「数据可视化」→ `samplelib/serve_angle_view.py`
 的角度散点图 + 人脸缩略图；以及 `Sorter.py --rename` 把脸按清晰度/姿态/分辨率重命名后"开文件夹当缩略图长条看"）。
 所以按身份挑人要用下面的流程：
 
 ```powershell
-Set-Location <DFL_ROOT>   # 你的深变安装目录
+Set-Location <DFL_ROOT>
 # ① 聚类（21k 张约 6-7 分钟：embedding 提取 + DBSCAN）
 .\python\python.exe FacesetProcessor\Filter.py -i "<aligned目录>" --mode faceid --eps 0.3 --min-samples 2 --model w600k_mbf
 # ② 每个组做一张拼图（每组抽 12 张、带组名/张数/占比）→ 人工目检
@@ -96,11 +102,11 @@ Set-Location <DFL_ROOT>   # 你的深变安装目录
 ### 目检工具 `make_contact_sheet.py`（通用，两种模式自动切换）
 
 ```powershell
-Set-Location <DFL_ROOT>   # 你的深变安装目录
+Set-Location <DFL_ROOT>
 # 分组模式：目录里有 faceid_group_* / faceid_noise 子目录 → 每组一张拼图（组名+张数+占比）
 .\python\python.exe tools\marker_probe\make_contact_sheet.py "<aligned目录>"
 # 平铺模式：目录里直接是脸图 → 一张总览图（看切脸质量、取景一致性）
-.\python\python.exe tools\marker_probe\make_contact_sheet.py "<aligned目录>" --out "<输出目录>" --cols 6 --rows 4 --cell 160
+.\python\python.exe tools\marker_probe\make_contact_sheet.py "<aligned目录>" --out "D:\check_quality" --cols 6 --rows 4 --cell 160
 ```
 
 参数：`--out` 输出目录（默认 `<目录>\_idcheck`）／`--cols --rows --cell` 网格与格子像素／
@@ -110,7 +116,7 @@ Set-Location <DFL_ROOT>   # 你的深变安装目录
 **铁律：输出目录不要放在 aligned 里面** —— `--merge-only` 会把 `_idcheck` 当成一组把 PNG 卷回脸集
 （2026-09-30 实测踩过，脚本已把默认输出放 `<目录>\_idcheck`，但用完仍建议挪到 face 目录之外）。
 
-**实测口径（实测样本 20,476 张，eps 0.3）**：出 **95 组 + 噪声 140**，
+**实测口径（<示例片>，20,476 张，eps 0.3）**：出 **95 组 + 噪声 140**，
 最大组 17,545（85.7%，基本就是女主），其后 818 / 267 / 243 / 170 / 159 / 116 / 103…
 → **eps 0.3 偏保守、组数会很碎**（同一人因角度/遮挡被拆成多组）。想"一眼挑准"可把 `--eps` 提到 0.45–0.5 重跑（通常压到 3–8 组）。
 

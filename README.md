@@ -33,6 +33,8 @@ git clone --depth 1 https://github.com/liyoulu/shenbian-skill.git "$HOME/.agents
 | 文件 | 内容 |
 |---|---|
 | `SKILL.md` | 主手册：全流程总览、常见任务 SOP、排障速查、环境基线 |
+| `tool-index.md` | **素材侧工具速查**：IG/人物夹/视频收集、blur/faceid/查重、人工筛 UI、归位入库 |
+| SKILL.md「SOP-6/7」 | **批量收集流程**：图片漏斗（ig_harvest/person_extract/blur/faceid/人审/归位）与视频流水线（单/多视频一条龙） |
 | `references/quickstart.md` | **零基础一条龙**：六步命令链，每步带「照抄就能跑」的默认值 |
 | `references/landmarker-selection.md` | 15 检测器 × 8 标记器实测选型（含云/框比自检法） |
 | `references/data-processing.md` | 脸集清洗：faceid 拆身份、blur 剔糊、GUI↔CLI 对照 |

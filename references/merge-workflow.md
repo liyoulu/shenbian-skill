@@ -33,9 +33,9 @@
 老 DFL 必须先切帧再切脸；深变一步到位：
 
 ```powershell
-Set-Location <DFL_ROOT>   # 你的深变安装目录
+Set-Location <DFL_ROOT>
 .\python\python.exe Extractor\Extractor.py `
-  -i "<你的视频>.mkv" `      # 视频直接进
+  -i "<视频目录>\...\<示例片>.mkv" `      # 视频直接进
   -o "workspace\data_dst\aligned" `          # 输出对齐人脸
   -d YoloV8Face -l insightface-2d106det `    # 检测器+标记器（S3FD 是老基准但慢约 20×，见 landmarker-selection.md）
   -t whole_face `                            # 脸型（默认 whole_face）
@@ -53,8 +53,8 @@ Set-Location <DFL_ROOT>   # 你的深变安装目录
 
 DST 目录结构（MergeStudio 依赖）：**视频 + 同名目录/aligned/**，即
 ```
-workspace\<你的视频>.mkv
-workspace\<你的视频>\aligned\*.jpg     ← _check_dfl() 按此识别 DFL 工程
+workspace\<示例片>.mkv
+workspace\<示例片>\aligned\*.jpg     ← _check_dfl() 按此识别 DFL 工程
 ```
 切脸输出到 `workspace\<视频名>\aligned` 后，MergeStudio 打开 workspace 自动识别为 DFL 工程（detect_mode=skip_dfl，跳过内置检测直接用 aligned）。
 
@@ -87,23 +87,24 @@ workspace\<你的视频>\aligned\*.jpg     ← _check_dfl() 按此识别 DFL 工
 | 场景 | 需要转换吗 |
 |---|---|
 | 老 DFL .npy 模型在深变**续训** | 需要：convert_dfl_tf_to_torch.py（.npy→.pth，权重+优化器状态） |
-| 老 DFL 生态**已有的 .dfm** 直接合成 | **不需要**：深变 MergeStudio 的 dfm 加载器就是标准 ONNX，与老 DFL exportdfm 产物完全兼容（已实测老 DFL 4.x 导出的 dfm 加载成功，320×320 签名一致） |
+| 老 DFL 生态**已有的 .dfm** 直接合成 | **不需要**：深变 MergeStudio 的 dfm 加载器就是标准 ONNX，与老 DFL exportdfm 产物完全兼容（<人物B>_SAEHD_model.dfm 已实测加载成功，320×320 签名一致） |
 | 深变新训 .pth 模型要进 MergeStudio | 走 exportdfm 导出 dfm（深变正常流程，不算跨版本转换） |
 | main.py merge CLI | **不需要 dfm**：与老流程一样直接加载 .pth 模型类交互合成（--pipeline 跳交互批量跑）。MergeStudio 与 CLI 是两个并列入口，不是新旧替代 |
 
+> **现有模型清单 + 目录形态（junction 与否）见 [env-and-models.md](env-and-models.md)「模型盘点规程」**：深变只有 `<人物>`（.pth 可续训 / .dfm 可合成）；老工作流有 11 个身份 .npy + `<人物B>_SAEHD_model.dfm`。盘点时务必连顶层 .pth/.dfm 一起列，别只列子目录。
 
 ### 路线 A：老模型转换（仅续训时需要）
 
 ```powershell
 # 把老 DFL 模型转成深变格式（复制不移动，原件不动）
 .\python\python.exe tools\convert_dfl_tf_to_torch.py `
-  --src "<老DFL的model目录>" `
+  --src "<老DFL-MVE安装根>\workspace\model" `
   --dst "<DFL_ROOT>\workspace\model" `
-  --model SAEHD --name WY
+  --model SAEHD --name <人物>
 ```
 
 - 支持 SAEHD/AMP/Quick96/XSeg，转换后可续训（权重+优化器状态都转）
-- WY 是 df-udt 架构、416 分辨率、wf 脸型——转换器支持 df/liae 全架构
+- <人物> 是 df-udt 架构、416 分辨率、wf 脸型——转换器支持 df/liae 全架构
 - 4.0.8.4 修了 LIAE 大 ae_dims（384）转换后权重错乱的 bug
 - 转换后 DFM 导出（MergeStudio 可直接吃 DFM）：
   `.\python\python.exe main.py exportdfm --model-dir workspace\model --model SAEHD`
@@ -134,7 +135,7 @@ Web UI 操作流：
 4. **时间线**：多轨道，不同片段不同参数（如某段遮挡多用 X-dst 遮罩）
 5. **导出**：FFmpeg NVENC，4.0.7 起支持 GPU 解码加速
 
-### HDR/10bit 源注意（实测片源为 4K 10bit）
+### HDR/10bit 源注意（<示例片> 是 4K 10bit）
 
 - 切脸：标准 bt709 模式快；HDR 精确模式管道内 libplacebo 色调映射，颜色完全正确但慢
 - 已切完的人脸可后补色调映射：`tools/tonemap_aligned_faces.py`
@@ -146,14 +147,14 @@ Web UI 操作流：
 2. MergeStudio 预览调参是流程的一部分（对应老流程的交互 Merge）
 其余（装载、切脸、转换、导出）可自动执行。
 
-## AV1 片源解码瓶颈（实测 2026-09-29）
+## AV1 片源解码瓶颈（实测 2026-09-29，<示例片>）
 
 - 4K AV1 10bit 软解只有 9.6-11 fps（OpenCV 默认不走硬件解码），切脸全管线被解码卡死，GPU 利用率仅 33%
 - 提速方案：先转 H.264 代理再切——ffmpeg -hwaccel cuda -i in.mkv -c:v h264_nvenc -crf 18 proxy.mp4（32 分钟片约 5 分钟），之后切脸可到 25-40 fps，总时间减半以上
 - 代价：脸图来自代理帧（8bit 转码），训练素材轻微质量损失——画质优先用原片慢跑，速度优先用代理
 - 检测方法：ffprobe -show_entries stream=codec_name；纯解码基准（cv2 逐帧 read 120 帧计时）≈ 管线 fps 即确认解码瓶颈
 
-### AV1 / 解码与切脸吞吐实测校准（2026-09-30 实测，1080p AV1 10bit）
+### AV1 / 解码与切脸吞吐实测校准（2026-09-30，<示例片> 1080p AV1 10bit）
 
 - **硬解能力是有的**：本机 ffmpeg 7.1.1 带 `av1_cuvid`（AV1 硬解）+ `cuda/d3d11va/dxva2/d3d12va`；
   MergeStudio 导出侧也有 `hwaccel` 参数（`export_pipeline.py` 的 `_hwaccel_for_encoder` / `_stage1_extract_frames(hwaccel=...)`）。
@@ -229,7 +230,7 @@ Web UI 操作流：
 - **导出目录**：MergeStudio 导出写 workspace，完成后核对 result 文件
 - **GPU 抢占**：训练时别同时跑 MergeStudio 导出（12GB 卡装不下两个大模型）
 - **百度网盘 modelhub 包**：下载暂停是常态，检查客户端里是否要点继续/开加速
-- **导出慢到离谱（0.2 it/s）＝ 显存被挤爆，不是模型问题**（2026-09-30 实测：RTX 3060 12GB / 1080p 素材）：
+- **导出慢到离谱（0.2 it/s）＝ 显存被挤爆，不是模型问题**（2026-09-30 实测：RTX 3060 12GB / <示例片> 1080p）：
   导出面板 `workers` 留空＝自动＝`CPU核数//2`（本机 6 个换脸进程）→ 各带一份 ONNX session，显存逼近 **11.2/12.3 GB**
   → 换脸掉到 **0.2 it/s，20,448 帧全片约 19 小时**；改成 **workers=2** 后，300 帧试片（检测 300 帧 + 206 张脸换脸 + 合并）约 3.5 分钟走完，合并阶段 3.1 it/s。
   → **12GB 卡的导出 workers 填 2**，别留空；同理导出期间别同时训练。

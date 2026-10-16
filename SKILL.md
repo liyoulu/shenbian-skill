@@ -48,6 +48,8 @@ description: 深变（DeepFaceLab-PyTorch / DeepFaceLab-Torch）工作流 skill�
 | 问合成滑块（mode/mask/erode/blur/超分/调色…） | [mergestudio-params.md](references/mergestudio-params.md) |
 | 端到端流程细节与老 DFL 差异 | [merge-workflow.md](references/merge-workflow.md) |
 | 遇到报错/异常 | 本文件「排障速查」 |
+| 批量收集素材（IG 图库/人物夹/视频） | [tool-index.md](tool-index.md) + 本文件 SOP-6/7 |
+| faceid 分组结果人工筛（删/合并） | `tools\faceid_browser.py`（SOP-6） |
 
 ## 训练调参速查（起训默认 + 信号表 + 阶段律）
 
@@ -100,6 +102,27 @@ ffprobe 看规格 → 切脸（--quick-test 先验参数）→ 清洗 → 训练
 5. MergeStudio 端口占用 → 启动脚本会提示处理
 6. HDR 颜色不对 → 提取时选「HDR 精确模式」（libplacebo 管道内色调映射）
 7. 长任务请用独立进程跑（`Start-Process -PassThru` + 日志重定向），不要在交互会话里前台等待
+8. 脸图文件名含中文/emoji 时 blur/faceid 报 Failed to read → cv2.imread 不支持非 ASCII 路径；用读取端兼容补丁（np.fromfile+imdecode，fork 的 Filter.py 已修）或临时改 ASCII 名
+
+**SOP-6 图片素材批量收集（人物夹 / IG 图库）**
+
+工具（见文末「配套工具获取」）：`ig_harvest.py`（IG 图源）、`person_extract.py`（人物夹首切）、`resolution_gate.py`（分辨率门）、`faceid_browser.py`（人工筛 UI）。
+
+1. **首切**：人物夹图片树 → `python tools\person_extract.py --root <素材根> --out "C:\SRC\<人物>" --recursive`（深变 Extractor 动态尺寸直出；脸图名 `px<短边4位>__<来源>_N.png` 前缀命名，按名排序即按分辨率分组；管线不含归位）。
+   IG 账号图源 → `python tools\ig_harvest.py --src <账号目录> --out <输出目录>`：csv 账本锚定源文件防重复切，无脸图也记账；源只读不动。
+2. **分辨率门（可选）**：`python tools\resolution_gate.py --input <脸图目录> --min 256 --move`，<256 的图移入 filtered_by_res/。
+3. **blur 分档**：`python FacesetProcessor\Filter.py -i <目录> --mode blur --train-res <训练分辨率>`——阈值按本批 10/30/60 分位自动三档，**保留 medium+high**；**同一批素材一轮跑完**（相对分位阈值跨轮不可比）；补跑只处理顶层。
+4. **faceid 分组**：`python FacesetProcessor\Filter.py -i <目录> --mode faceid --eps 0.35`（0.35=人工可审甜点；0.45 适合无人值守；在合并后的全集上一次跑到位，不要分源跑）。
+5. **人工筛**：`python tools\faceid_browser.py --root <目录>`（固定 8104，启动自动接管单实例）：每组封面即预览，点开看全组；单击选中 / Shift 范围多选；删除=移 `.trash\<组>\` 可恢复；同身份合并到 `merged\`。开给用户前 GET /api/groups 核对目录。
+6. **入库**：用户点头后把幸存脸图移入素材库；**入库后才做母图归位一次**（有入库脸图命中的母图=cutted，其余=filtered），提前归位或二次归位都不做。
+
+**SOP-7 视频批量收集（流水线，单/多视频同一入口）**
+
+`python tools\video_pipeline.py --video-dir <视频夹> --out "C:\SRC\<人物>" --dedup`
+
+- ffmpeg fps=1 PNG 抽帧（HDR tonemap；无色彩空间标签的源自动回退纯 fps）→ 深变 Extractor 自适应切脸（px 前缀命名）→ **多视频流水重叠**（切视频 N 的脸时预启动 N+1 抽帧）→ `--dedup` phash 查重（相邻秒重复脸会灌爆聚类，故放 faceid 前）→ faceid → 自动打开 faceid_browser 人工筛。
+- 帧目录默认 `%TEMP%\video_pipeline_frames\`（纯 ASCII 防中文路径坑；帧已存在=断点续跑）；`--del-frames` 切完删帧；单视频用 `--videos 传一个文件` 即可。
+- 指定"只要某个人"的需求不在切脸阶段过滤——全脸切 + faceid 分组 + 人工审定归属。
 
 ## 环境基线与更新记录
 
@@ -120,6 +143,7 @@ ffprobe 看规格 → 切脸（--quick-test 先验参数）→ 清洗 → 训练
 - `tools/doctor.py`：环境自检（根目录/modelhub/ffmpeg/CUDA provider/XSeg/磁盘/fork 增强；`--quiet` `--json` 可选）——**agent 每次激活先跑它**
 - `tools/marker_probe/`：检测器/标记点实测装置（video_segment_test / video_landmarker_test / make_contact_sheet + mk_common/_env 库，均支持 `--check` 自检）。运行前置：`DFL_ROOT` 环境变量或自动探测
 - 实测结论全部在 references（选型表、阈值、性能数字），均可复跑
+- **配套工具获取**：`ig_harvest / person_extract / video_pipeline / faceid_browser / resolution_gate / trainctl` 等素材/控制脚本在作者 fork（github.com/liyoulu/DeepFaceLab-PyTorch，ui-dark 分支）的 `tools\`——复制到 `<DFL_ROOT>\tools\` 即用（脚本按自身位置推断深变根目录）
 
 ## 更新记录
 

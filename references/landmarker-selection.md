@@ -34,7 +34,7 @@
 ### 0.3 成套命令
 
 ```powershell
-Set-Location <DFL_ROOT>   # 你的深变安装目录
+Set-Location <DFL_ROOT>
 # 常规整片（默认就这套）
 .\python\python.exe Extractor\Extractor.py -i <视频> -o <绝对路径>\aligned -d YoloV11nFace -l insightface-2d106det -t whole_face
 # 侧脸/大角度/关键素材
@@ -175,7 +175,7 @@ asym = |d(鼻梁27, 左颌0) − d(鼻梁27, 右颌16)| / 两者之和；正脸�
 | `eval_smallface.py` | 小脸极限扫描（20–120px 贴图，one_stage vs sliding_window）|
 | `make_contact_sheet.py` | 目检拼图：分组模式每组一张（身份筛选）／平铺模式一张总览（切脸质量）。用法见 `data-processing.md` |
 
-跑法：先设 `$env:DFL_ROOT`（或让 `_env.py` 自动探测），再用深变自带 python 执行；
+跑法：脚本里 `sys.path.insert(0, r'<DFL_ROOT>')`，用 `<DFL_ROOT>\python\python.exe` 执行；
 长任务用 Start-Process/后台 + 日志，别用前台限时（前台超时会杀进程树）。
 
 ## 八、人脸检测器（-d）选型与实测（2026-09-30）
@@ -334,7 +334,7 @@ YoloV8Face / YoloV11nFace / TinyMog / DamoFD / MogFace / MTCNN 都不在里面�
 （4C10EEF5C9E168357A16FDD580FA8371），所以两者耗时（2.9s）、命中模式（已裁大脸 10/30）、kps 数字（0.0193）逐项一致。
 **"远景三选一"实际是二选一：`RetinaFace_10g`（= DamoFD）或 `TinyMog`。**
 
-### 8.7 真实片源基准：`F:\dfl\dst_candidates\202605121719.mp4`
+### 8.7 真实片源基准：`<老DFL工作流根>\dst_candidates\202605121719.mp4`
 
 HEVC 1920×1080 30fps 179s，"场景略复杂"。方法：`tools/marker_probe/video_segment_test.py`，
 三段抽样（00:00:20 / 00:01:10 / 00:02:20，各 10s @2fps = 20 帧，共 60 帧），按原分辨率 1080p 送检。
@@ -362,7 +362,7 @@ HEVC 1920×1080 30fps 179s，"场景略复杂"。方法：`tools/marker_probe/vi
 原始报告在 `tools/marker_probe/baselines/`（三段各一份）；目检帧：
 `<工作区>\marker_probe\inspect_seg3_frame0001.png` / `inspect_seg3_frame0016.png`。
 
-## 九、标记点真实片源基准（同一段视频：`F:\dfl\dst_candidates\202605121719.mp4`）
+## 九、标记点真实片源基准（同一段视频：`<老DFL工作流根>\dst_candidates\202605121719.mp4`）
 
 方法：`tools/marker_probe/video_landmarker_test.py`，三段抽样（00:00:20 / 00:01:10 / 00:02:20，各 10s @2fps），
 先用 TinyMog 裁人脸（与切脸真实流程一致），再把**同一批人脸裁剪**喂给全部 8 个标记点。
