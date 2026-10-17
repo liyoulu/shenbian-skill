@@ -34,7 +34,7 @@
 | blur 分档 | 清晰度 4 档，保留 medium+high | `python FacesetProcessor\Filter.py -i <dir> --mode blur --train-res <训练分辨率>` | 相对分位阈值**跨轮不可比**，同批素材一轮跑完 |
 | phash 查重 | 重复脸移 `repeated\` | `python FacesetProcessor\Filter.py -i <dir> --mode repeated --threshold 0.98` | 可重复跑；已算过 phash 的走 metadata 缓存 |
 | faceid 聚类 | DBSCAN 分簇 + noise | `python FacesetProcessor\Filter.py -i <dir> --mode faceid --eps 0.35` | eps：0.35 人审甜点 / 0.375 折中 / 0.45 无人值守；合并全集一次跑到位 |
-| faceid_browser | 相册风人工筛 UI | `python tools\faceid_browser.py --root <dir>` | 固定 8104，启动自动接管单实例；单击选中/Shift 范围多选；删除=移 `.trash\<组>\` 可恢复；⇄合并到 `merged\`；**开给用户前 GET /api/groups 核对是当前目录的分组**；**直审**：`--root` 直指纯脸图目录即审（根目录虚拟组「（根目录）」）、大库滚动分批渲染、Ctrl+A 全选/Ctrl+I 反选 |
+| faceid_browser | 相册风人工筛 UI | `python tools\faceid_browser.py --root <dir>` | 固定 8104，启动自动接管单实例；单击选中/Shift 范围多选；删除=移 `.trash\<组>\` 可恢复；⇄合并到 `merged\`；**开给用户前 GET /api/groups 核对是当前目录的分组**；**直审**：`--root` 直指纯脸图目录即审（根目录虚拟组「（根目录）」）、大库滚动分批渲染、Ctrl+A 全选/Ctrl+I 反选；**大库先 `--prebuild-thumbs` 预热缩略图**（多进程 ~90 张/s），排序后台化带进度、二次走缓存 |
 
 ## D. 归位入库
 
